@@ -8,78 +8,178 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <!-- Teachable Machine Image Library -->
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <style>
+        /* Include the CSS provided earlier for styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 20px 0;
+            color: #2c3e50;
+        }
+
+        button, input[type="file"] {
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        #webcam-container, #uploaded-image-container, #label-container {
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #ffffff;
+            max-width: 400px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #label-container div {
+            font-size: 1rem;
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #eafaf1;
+            color: #16a085;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
     <div>
         <h1>Rock Identification Model</h1>
-        <p>Teachable Machine Image Model</p>
+        <p>Upload an image or use your webcam to identify the rock type.</p>
     </div>
-    <button type="button" onclick="init()">Start Webcam</button>
-    <input type="file" accept="image/*" onchange="handleImageUpload(event)" />
+    <!-- Buttons for Model, Webcam, and File Upload -->
+    <button type="button" onclick="init()">Load Model</button>
+    <button type="button" onclick="initWebcam()">Start Webcam</button>
+    <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" />
+    
+    <!-- Containers for Webcam, Uploaded Image, and Predictions -->
     <div id="webcam-container"></div>
     <div id="uploaded-image-container"></div>
     <div id="label-container"></div>
 
     <script>
-        const URL = "./my_model/";
+        const URL = "./my_model/"; // Update this to the correct path for your model
 
         let model, webcam, labelContainer, maxPredictions;
 
-        // Load the model and set up the webcam
+        // Load the model
         async function init() {
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
 
-            // Load the model and metadata
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
+            try {
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
 
-            // Set up the webcam
-            const flip = true; // Whether to flip the webcam
-            webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
+                // Create prediction labels
+                labelContainer = document.getElementById("label-container");
+                labelContainer.innerHTML = ""; // Clear previous labels
+                for (let i = 0; i < maxPredictions; i++) {
+                    labelContainer.appendChild(document.createElement("div"));
+                }
+
+                alert("Model loaded successfully!");
+            } catch (error) {
+                console.error("Error loading the model:", error);
+                alert("Failed to load the model. Please try again.");
+            }
+        }
+
+        // Initialize the webcam
+        async function initWebcam() {
+            if (!model) {
+                alert("Please load the model first by clicking the 'Load Model' button.");
+                return;
+            }
+
+            const flip = true; // Flip the webcam
+            webcam = new tmImage.Webcam(200, 200, flip);
             await webcam.setup(); // Request access to the webcam
             await webcam.play();
-            window.requestAnimationFrame(loop);
+            window.requestAnimationFrame(webcamLoop);
 
-            // Append webcam to the DOM
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
-
-            // Append label elements to the DOM
-            labelContainer = document.getElementById("label-container");
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.appendChild(document.createElement("div"));
-            }
+            // Append the webcam canvas to the DOM
+            const webcamContainer = document.getElementById("webcam-container");
+            webcamContainer.innerHTML = ""; // Clear previous webcam content
+            webcamContainer.appendChild(webcam.canvas);
         }
 
-        async function loop() {
+        async function webcamLoop() {
             webcam.update(); // Update the webcam frame
-            await predict(webcam.canvas);
-            window.requestAnimationFrame(loop);
+            await predict(webcam.canvas); // Predict from the webcam
+            window.requestAnimationFrame(webcamLoop);
         }
 
-        // Handle uploaded images
+        // Handle image upload
         async function handleImageUpload(event) {
+            if (!model) {
+                alert("Please load the model first by clicking the 'Load Model' button.");
+                return;
+            }
+
             const file = event.target.files[0];
             if (file) {
+                // Clear previous uploaded images
                 const imageContainer = document.getElementById("uploaded-image-container");
-                imageContainer.innerHTML = ""; // Clear previous images
-                const img = document.createElement("img");
-                img.src = URL.createObjectURL(file);
+                imageContainer.innerHTML = "";
+
+                const img = new Image();
+
+                if (typeof URL.createObjectURL === "function") {
+                    img.src = URL.createObjectURL(file);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+
                 img.onload = async () => {
-                    // Predict using the uploaded image
-                    await predict(img);
+                    imageContainer.appendChild(img); // Display the uploaded image
+                    await predict(img); // Predict the uploaded image
                 };
-                imageContainer.appendChild(img);
             }
         }
 
-        // Run predictions on an image, video, or canvas element
-        async function predict(source) {
-            const prediction = await model.predict(source);
-            for (let i = 0; i < maxPredictions; i++) {
-                const classPrediction =
-                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-                labelContainer.childNodes[i].innerHTML = classPrediction;
+        // Predict using the input source (image, video, or canvas)
+        async function predict(inputElement) {
+            if (!model) {
+                console.error("Model is not loaded. Cannot predict.");
+                return;
+            }
+
+            try {
+                const predictions = await model.predict(inputElement);
+                labelContainer.innerHTML = ""; // Clear previous predictions
+
+                // Display each prediction with a percentage
+                predictions.forEach(prediction => {
+                    const percentage = (prediction.probability * 100).toFixed(2); // Convert to percentage
+                    const classPrediction = `${prediction.className}: ${percentage}%`;
+                    const label = document.createElement("div");
+                    label.textContent = classPrediction;
+                    labelContainer.appendChild(label);
+                });
+            } catch (error) {
+                console.error("Error during prediction:", error);
             }
         }
     </script>
