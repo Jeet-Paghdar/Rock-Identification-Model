@@ -10,7 +10,8 @@
 </head>
 <body>
     <div>Teachable Machine Image Model</div>
-    <button type="button" onclick="init()">Start</button>
+    <button type="button" onclick="init()">Start Webcam</button>
+    <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" />
     <div id="webcam-container"></div>
     <div id="label-container"></div>
 
@@ -46,18 +47,31 @@
 
         async function loop() {
             webcam.update(); // update the webcam frame
-            await predict();
+            await predict(webcam.canvas);
             window.requestAnimationFrame(loop);
         }
 
-        // Run the webcam image through the image model
-        async function predict() {
+        // Run the image through the image model
+        async function predict(inputElement) {
             // Predict can take in an image, video, or canvas HTML element
-            const prediction = await model.predict(webcam.canvas);
+            const prediction = await model.predict(inputElement);
             for (let i = 0; i < maxPredictions; i++) {
                 const classPrediction =
                     prediction[i].className + ": " + prediction[i].probability.toFixed(2);
                 labelContainer.childNodes[i].innerHTML = classPrediction;
+            }
+        }
+
+        // Handle image upload
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                img.onload = async () => {
+                    // Predict the uploaded image
+                    await predict(img);
+                };
             }
         }
     </script>
