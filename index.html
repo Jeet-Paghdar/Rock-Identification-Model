@@ -15,6 +15,7 @@
         <p>Teachable Machine Image Model</p>
     </div>
     <!-- Buttons for Webcam and File Upload -->
+    <button type="button" onclick="init()">Load Model</button>
     <button type="button" onclick="initWebcam()">Start Webcam</button>
     <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" />
     
@@ -28,16 +29,36 @@
 
         let model, webcam, labelContainer, maxPredictions;
 
-        // Load the model and initialize the webcam
-        async function initWebcam() {
+        // Load the model
+        async function init() {
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
 
-            // Load the model and metadata
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
+            try {
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
 
-            // Setup the webcam
+                // Create prediction labels
+                labelContainer = document.getElementById("label-container");
+                labelContainer.innerHTML = ""; // Clear previous labels
+                for (let i = 0; i < maxPredictions; i++) {
+                    labelContainer.appendChild(document.createElement("div"));
+                }
+
+                alert("Model loaded successfully!");
+            } catch (error) {
+                console.error("Error loading the model:", error);
+                alert("Failed to load the model. Please try again.");
+            }
+        }
+
+        // Initialize the webcam
+        async function initWebcam() {
+            if (!model) {
+                alert("Please load the model first by clicking the 'Load Model' button.");
+                return;
+            }
+
             const flip = true; // whether to flip the webcam
             webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
             await webcam.setup(); // Request access to the webcam
@@ -45,13 +66,9 @@
             window.requestAnimationFrame(webcamLoop);
 
             // Append the webcam canvas to the DOM
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
-
-            // Create prediction labels
-            labelContainer = document.getElementById("label-container");
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.appendChild(document.createElement("div"));
-            }
+            const webcamContainer = document.getElementById("webcam-container");
+            webcamContainer.innerHTML = ""; // Clear any previous webcam canvas
+            webcamContainer.appendChild(webcam.canvas);
         }
 
         async function webcamLoop() {
@@ -60,8 +77,13 @@
             window.requestAnimationFrame(webcamLoop);
         }
 
-        // Handle image upload with fallback for URL.createObjectURL
+        // Handle image upload
         async function handleImageUpload(event) {
+            if (!model) {
+                alert("Please load the model first by clicking the 'Load Model' button.");
+                return;
+            }
+
             const file = event.target.files[0];
             if (file) {
                 // Clear previous uploaded images
@@ -93,13 +115,26 @@
 
         // Predict using an input source (image, video, or canvas)
         async function predict(inputElement) {
-            const predictions = await model.predict(inputElement);
-            for (let i = 0; i < maxPredictions; i++) {
-                const classPrediction =
-                    predictions[i].className + ": " + predictions[i].probability.toFixed(2);
-                labelContainer.childNodes[i].innerHTML = classPrediction;
+            if (!model) {
+                console.error("Model is not loaded. Cannot predict.");
+                return;
+            }
+
+            try {
+                const predictions = await model.predict(inputElement);
+                for (let i = 0; i < maxPredictions; i++) {
+                    const classPrediction =
+                        predictions[i].className + ": " + predictions[i].probability.toFixed(2);
+                    labelContainer.childNodes[i].innerHTML = classPrediction;
+                }
+            } catch (error) {
+                console.error("Error during prediction:", error);
             }
         }
     </script>
 </body>
 </html>
+ 
+
+       
+          
