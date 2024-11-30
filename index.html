@@ -1,135 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <style>
-    /* General Page Styles */
-    body {
-        font-family: 'Arial', sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f5f5f5;
-        color: #333;
-        text-align: center;
-    }
-
-    h1 {
-        font-size: 2.5rem;
-        margin: 20px 0;
-        color: #2c3e50;
-    }
-
-    p {
-        font-size: 1.2rem;
-        color: #555;
-        margin-bottom: 20px;
-    }
-
-    /* Buttons and Input Styles */
-    button, input[type="file"] {
-        margin: 10px;
-        padding: 12px 20px;
-        font-size: 1rem;
-        border-radius: 5px;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-    }
-
-    button {
-        background-color: #3498db;
-        color: white;
-    }
-
-    button:hover {
-        background-color: #2980b9;
-    }
-
-    input[type="file"] {
-        background-color: #ecf0f1;
-        color: #333;
-        cursor: pointer;
-    }
-
-    input[type="file"]::-webkit-file-upload-button {
-        padding: 5px 10px;
-        background-color: #3498db;
-        color: white;
-        border: none;
-        border-radius: 3px;
-        cursor: pointer;
-    }
-
-    input[type="file"]::-webkit-file-upload-button:hover {
-        background-color: #2980b9;
-    }
-
-    /* Containers Styles */
-    #webcam-container, #uploaded-image-container, #label-container {
-        margin: 20px auto;
-        padding: 20px;
-        border-radius: 10px;
-        background-color: #ffffff;
-        max-width: 400px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    #webcam-container canvas {
-        display: block;
-        margin: 0 auto;
-        border: 2px solid #bdc3c7;
-        border-radius: 10px;
-    }
-
-    #uploaded-image-container img {
-        max-width: 100%;
-        border-radius: 10px;
-        margin-top: 15px;
-    }
-
-    #label-container div {
-        font-size: 1rem;
-        margin: 5px 0;
-        padding: 5px;
-        background-color: #eafaf1;
-        color: #16a085;
-        border-radius: 5px;
-    }
-
-    /* Button Alignment */
-    button, input[type="file"] {
-        display: inline-block;
-        margin: 10px 10px 20px 10px;
-    }
-
-    /* Layout and Responsiveness */
-    @media screen and (max-width: 768px) {
-        h1 {
-            font-size: 1.8rem;
-        }
-
-        p {
-            font-size: 1rem;
-        }
-
-        button, input[type="file"] {
-            width: 90%;
-        }
-
-        #webcam-container, #uploaded-image-container, #label-container {
-            width: 90%;
-        }
-    }
-
-    /* Footer (Optional) */
-    footer {
-        margin-top: 20px;
-        padding: 10px;
-        background-color: #2c3e50;
-        color: white;
-        font-size: 0.9rem;
-    }
-</style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rock Identification Model</title>
@@ -137,13 +8,63 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <!-- Teachable Machine Image Library -->
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <style>
+        /* Include the CSS provided earlier for styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 20px 0;
+            color: #2c3e50;
+        }
+
+        button, input[type="file"] {
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        #webcam-container, #uploaded-image-container, #label-container {
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #ffffff;
+            max-width: 400px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #label-container div {
+            font-size: 1rem;
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #eafaf1;
+            color: #16a085;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
     <div>
         <h1>Rock Identification Model</h1>
-        <p>Teachable Machine Image Model</p>
+        <p>Upload an image or use your webcam to identify the rock type.</p>
     </div>
-    <!-- Buttons for Webcam and File Upload -->
+    <!-- Buttons for Model, Webcam, and File Upload -->
     <button type="button" onclick="init()">Load Model</button>
     <button type="button" onclick="initWebcam()">Start Webcam</button>
     <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" />
@@ -153,8 +74,8 @@
     <div id="uploaded-image-container"></div>
     <div id="label-container"></div>
 
-    <script type="text/javascript">
-        const URL = "./my_model/";
+    <script>
+        const URL = "./my_model/"; // Update this to the correct path for your model
 
         let model, webcam, labelContainer, maxPredictions;
 
@@ -188,15 +109,15 @@
                 return;
             }
 
-            const flip = true; // whether to flip the webcam
-            webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
+            const flip = true; // Flip the webcam
+            webcam = new tmImage.Webcam(200, 200, flip);
             await webcam.setup(); // Request access to the webcam
             await webcam.play();
             window.requestAnimationFrame(webcamLoop);
 
             // Append the webcam canvas to the DOM
             const webcamContainer = document.getElementById("webcam-container");
-            webcamContainer.innerHTML = ""; // Clear any previous webcam canvas
+            webcamContainer.innerHTML = ""; // Clear previous webcam content
             webcamContainer.appendChild(webcam.canvas);
         }
 
@@ -221,7 +142,6 @@
 
                 const img = new Image();
 
-                // Fallback mechanism if URL.createObjectURL is not available
                 if (typeof URL.createObjectURL === "function") {
                     img.src = URL.createObjectURL(file);
                 } else {
@@ -233,16 +153,13 @@
                 }
 
                 img.onload = async () => {
-                    // Predict the uploaded image
-                    await predict(img);
+                    imageContainer.appendChild(img); // Display the uploaded image
+                    await predict(img); // Predict the uploaded image
                 };
-
-                // Display the uploaded image
-                imageContainer.appendChild(img);
             }
         }
 
-        // Predict using an input source (image, video, or canvas)
+        // Predict using the input source (image, video, or canvas)
         async function predict(inputElement) {
             if (!model) {
                 console.error("Model is not loaded. Cannot predict.");
@@ -251,11 +168,16 @@
 
             try {
                 const predictions = await model.predict(inputElement);
-                for (let i = 0; i < maxPredictions; i++) {
-                    const classPrediction =
-                        predictions[i].className + ": " + predictions[i].probability.toFixed(2);
-                    labelContainer.childNodes[i].innerHTML = classPrediction;
-                }
+                labelContainer.innerHTML = ""; // Clear previous predictions
+
+                // Display each prediction with a percentage
+                predictions.forEach(prediction => {
+                    const percentage = (prediction.probability * 100).toFixed(2); // Convert to percentage
+                    const classPrediction = `${prediction.className}: ${percentage}%`;
+                    const label = document.createElement("div");
+                    label.textContent = classPrediction;
+                    labelContainer.appendChild(label);
+                });
             } catch (error) {
                 console.error("Error during prediction:", error);
             }
@@ -263,7 +185,3 @@
     </script>
 </body>
 </html>
- 
-
-       
-          
